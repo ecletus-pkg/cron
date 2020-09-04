@@ -8,19 +8,25 @@ import (
 )
 
 type Plugin struct {
-	Key string
+	Key  string
+	cron *cron.Cron
 }
 
 func (p *Plugin) ProvideOptions() []string {
 	return []string{p.Key}
 }
 
+func (p *Plugin) ProvidesOptions(options *plug.Options) {
+	p.cron = cron.New()
+	options.Set(p.Key, p.cron)
+}
+
 func (p *Plugin) Init(options *plug.Options) {
-	c := cron.New()
-	options.Set(p.Key, c)
-	agp := options.GetInterface(ecletus.AGHAPE).(*ecletus.Ecletus)
+	agp := options.GetInterface(ecletus.ECLETUS).(*ecletus.Ecletus)
 	_ = agp.AddTask(task.NewTask(func() (err error) {
-		c.Start()
+		p.cron.Start()
 		return nil
-	}, c.Stop))
+	}, func() {
+		p.cron.Stop()
+	}))
 }
